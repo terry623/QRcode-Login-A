@@ -1,0 +1,98 @@
+﻿@{
+    Layout = "../Shared/_Layout.cshtml";
+}
+
+<head>
+    <script>
+        window.onload = function () {
+            document.getElementById("btnVerifyPart").style.display = 'none';
+            document.getElementById("qrcodepicture").style.display = 'block';
+            document.getElementById("show_QR").style.display = 'block';
+        }
+        function showButton() {
+            document.getElementById("btnVerifyPart").style.display = 'block';
+            document.getElementById("qrcodepicture").style.display = 'none';
+            document.getElementById("show_QR").style.display = 'none';
+            document.getElementById("btnDisconnect").style.display = 'block';
+        }
+    </script>
+</head>
+
+<div>
+    <h3 id="show_title">Hello @Session["UserName"] !</h3>
+
+    <div id="login_button">
+        <div class="button">
+            <h1 id="title">Game Center</h1>
+            <br />
+            <button type="button" class="btn btn-primary" onclick="location.href = '@Url.Action("btnGoOnclick", "Home", new { userName = @Session["UserName"] })'">
+                Let's Go
+            </button>
+            <button type="button" class="btn btn-danger" onclick="location.href = '@Url.Action("Index", "Home")'">
+                Log Out !
+            </button>
+        </div>
+    </div>
+    <div id="qrcode_back">
+
+        <div class="qrcode" id="qrcodepicture">
+            <h3 id="title2">Scan to enter the Game!</h3>
+            <a href='@Url.Action("Qr_click", "Home", new { userName = @Session["UserName"]})'>Show QRcode!</a>
+        </div>
+
+        <div class="verifybutton" id='btnVerifyPart' style='display:none;'>
+            <button id="verifybutton1" type="button" class="btn btn-primary">
+                Click to verify identification!
+            </button>
+        </div>
+        <div class="disconnectButton" id='btnDisconnect' style='display:none;'>
+            <button id="disconnectButton" class="btn btn-danger">
+                Disconnect
+            </button>
+        </div>
+
+        <div id="show_QR" align="center">@Html.Raw(ViewBag.HtmlStr)</div>
+
+    </div>
+
+</div>
+
+@section scripts {
+
+    <script>
+
+        var received_Id = null;
+
+        $(function () {
+
+            var chat = $.connection.chatHub;
+            chat.client.addNewMessageToPage = function (sender_Id, message) {
+                
+                if (message == "Wrong User!") alert("Someone try to Login from QRcode!");
+                else {
+                    //alert("B web's hub id : " + sender_Id + "\r\n" + "message : " + message);
+                    received_Id = sender_Id;
+                    if (message == "Finish QRscan!") showButton();
+                }
+            };
+
+
+            $.connection.hub.start().done(function () {
+
+                //alert("A web's hub id : " + $.connection.hub.id);
+                chat.server.send("@TempData["encode"]","Store Hub Id!");
+
+                $('#btnVerifyPart').click(function () {
+                    chat.server.send(received_Id , "Button Click!");
+
+                });
+            });
+            $('#disconnectButton').click(function () {
+                alert("Disconnect");
+                chat.server.send("A web","Please Scan Again!");
+                $.connection.hub.stop();
+                location.reload();
+            });
+        });
+</script>
+}
